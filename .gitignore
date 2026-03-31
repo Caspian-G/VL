@@ -30,3 +30,9 @@ captures/
 .idea/caches/
 .idea/libraries/
 .idea/modules.xml
+
+.cxx/
+**/.cxx/
+
+cmake-build-debug/
+cmake-build-release/
