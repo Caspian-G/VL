@@ -1,0 +1,7 @@
+[
+{
+  "directory": "D:/Projects/Android_Projects/VL/app/.cxx/Debug/1842646q/arm64-v8a",
+  "command": "D:\\AndroidSDK\\ndk\\27.0.12077973\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android33 --sysroot=D:/AndroidSDK/ndk/27.0.12077973/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dnative_lib_EXPORTS -ID:/Projects/Android_Projects/VL/app/src/main/cpp/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g0 -fno-limit-debug-info  -fPIC -o CMakeFiles\\native-lib.dir\\native-lib.cpp.o -c D:\\Projects\\Android_Projects\\VL\\app\\src\\main\\cpp\\native-lib.cpp",
+  "file": "D:\\Projects\\Android_Projects\\VL\\app\\src\\main\\cpp\\native-lib.cpp"
+}
+]
