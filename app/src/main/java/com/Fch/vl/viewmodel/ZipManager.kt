@@ -1,6 +1,5 @@
 package com.Fch.vl.viewmodel
 
-// ZipManager.kt
 import java.util.zip.ZipFile
 
 class ZipManager {

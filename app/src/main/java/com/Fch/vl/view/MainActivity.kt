@@ -54,7 +54,6 @@ import com.Fch.vl.view.theme.VLTheme
 import java.io.File
 import com.Fch.vl.R
 import com.Fch.vl.view.theme.*
-import com.Fch.vl.viewmodel.VlPlayer
 import android.provider.Settings
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -70,6 +69,10 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.io.extension
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import com.Fch.vl.viewmodel.NetManager
+import com.Fch.vl.viewmodel.VlPlayer
 
 
 class MainActivity : ComponentActivity() {
@@ -112,7 +115,8 @@ fun ActivityMain() {
     val context = LocalContext.current
     //select_list是否展开
     var expanded by remember { mutableStateOf(false) }
-    var isLocalFolderVisible by remember { mutableStateOf(true) }
+    var isLocalFolderVisible by remember { mutableStateOf(false) }
+    var isNetFolderVisible by remember { mutableStateOf(false) }
     //setting按钮旋转
     var rotationAngle by remember { mutableStateOf(0f) }
     val rotation by animateFloatAsState(
@@ -137,9 +141,18 @@ fun ActivityMain() {
             fileList = emptyList()
         }
     }
+    //当前网络文件夹的路径
+    var currentNetPath by remember { mutableStateOf("") }
+    var isShowingDialog by remember { mutableStateOf(false) }
+    var textFieldValue by remember { mutableStateOf("") }
+    var netFileList by remember { mutableStateOf(emptyList<String>()) }
+    val netManager = remember { NetManager() }
+    LaunchedEffect(currentNetPath) {
+        if(!textFieldValue.isEmpty()) netFileList = netManager.getHTTPFileList(textFieldValue, currentNetPath)
+    }
     //视频扩展名
     val videoExtensions = listOf("mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp")
-    val audioExtensions = listOf("mp3")
+    val audioExtensions = listOf("mp3", "wav", "flac", "aac", "ogg")
     val photoExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp")
     val rarExtensions = listOf("zip", "7z", "rar")
     //包裹surface的box的width
@@ -327,12 +340,18 @@ fun ActivityMain() {
                                 text = { Text(text = "本地", color = Grey) },
                                 onClick = {
                                     isLocalFolderVisible = true
+                                    isNetFolderVisible = false
                                     expanded = false
                                 },
                             )
                             DropdownMenuItem(
                                 text = { Text("联网", color = Grey) },
-                                onClick = {},
+                                onClick = {
+                                    isNetFolderVisible = true
+                                    isLocalFolderVisible = false
+                                    isShowingDialog = true
+                                    expanded = false
+                                },
                             )
                         }
                     }
@@ -703,8 +722,178 @@ fun ActivityMain() {
                         }
                     }
                 }
-                if(isShowingZipViewer){
-                    zipViewer(currentLocalZipPath, onClose = {})
+                Column {
+                    //网络文件目录Esc
+                    if(isNetFolderVisible) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .padding(5.dp)
+
+                        ) {
+                            Icon(
+                                modifier = Modifier
+                                    .align(Alignment.TopStart)
+                                    .fillMaxHeight(),
+                                painter = painterResource(R.drawable.ic_backspace),
+                                tint = Grey,
+                                contentDescription = null
+                            )
+                            TextButton(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(5.dp),
+                                onClick = {
+                                    scope.launch {
+                                        netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory")
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = "Esc",
+                                    color = Grey,
+                                    fontSize = 15.sp,
+                                    modifier = Modifier.fillMaxSize().offset(x = 35.dp)
+                                )
+                            }
+                        }
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            items(items = netFileList) { file ->
+                                TextButton(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(5.dp),
+                                    onClick = {
+                                        if (file.endsWith(".directory")) {
+                                            currentNetPath = file.substringBeforeLast(".")
+                                        } else {
+                                            //文件处理逻辑
+                                            if (file.endsWith(".video")) {
+//                                                isShowingSurface = true
+//                                                vlPlayer.playingVideo(file.absolutePath)
+                                            }else if(file.endsWith(".photo")){
+//                                                val folder = File(currentLocalPath)
+//                                                val imageFiles = folder.listFiles()?.filter {
+//                                                    !it.isDirectory && it.extension.lowercase() in photoExtensions
+//                                                } ?.sortedBy { it.name } //按名称排序
+//                                                currentLocalImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
+//                                                currentLocalImageIndex = imageFiles?.indexOf(file) ?: 0
+//                                                isShowingImage = true
+                                            }else if(file.endsWith(".audio")){
+                                                //
+                                            }else if(file.endsWith(".rar")){
+//                                                isShowingZipViewer = true
+//                                                currentLocalZipPath = file.absolutePath
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    if (file.endsWith(".directory")) {
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_folder),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }else if(file.endsWith(".video")){
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_video_file),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }else if(file.endsWith(".audio")){
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_audio_file),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }else if(file.endsWith(".photo")){
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_photo_file),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }else if(file.endsWith(".rar")){
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_rar_file),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }else{
+                                        Icon(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .offset(x = 1.dp),
+                                            painter = painterResource(R.drawable.ic_normal_file),
+                                            tint = Grey,
+                                            contentDescription = null
+                                        )
+                                    }
+                                    Text(
+                                        text = "${file.substring(0, file.lastIndexOf("."))}",
+                                        color = Grey,
+                                        fontSize = 15.sp,
+                                        modifier = Modifier.fillMaxSize().offset(x = 20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                //IP输入
+                if(isShowingDialog){
+                    AlertDialog(
+                        onDismissRequest = { isShowingDialog = false },
+                        title = { Text("") },
+                        text = {
+                            OutlinedTextField(
+                                value = textFieldValue,
+                                onValueChange = { textFieldValue = it },
+                                label = { Text("IP:Port") },
+                                singleLine = true
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        if (Regex("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}:\\d{1,5}$").matches(
+                                                textFieldValue
+                                            )
+                                        ) {
+                                            netFileList = netManager.getHTTPFileList(textFieldValue, currentNetPath)
+                                            isShowingDialog = false
+                                        } else Toast.makeText(context, "Illegal", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            ) {
+                                Text("comfirm")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { isShowingDialog = false }) {
+                                Text("cancel")
+                            }
+                        }
+                    )
+                    if(isShowingZipViewer){
+                        zipViewer(currentLocalZipPath, onClose = {})
+                    }
                 }
             }
         }

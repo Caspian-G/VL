@@ -24,7 +24,7 @@ class VlPlayer(application: Application) : AndroidViewModel(application) {
             addListener(object : Player.Listener {
                 override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) {
                     val sizeStr = "${size.width}x${size.height}"
-                    this@VlPlayer.videoSize = sizeStr
+                    this@`VlPlayer`.videoSize = sizeStr
                     onVideoSizeChanged?.invoke(sizeStr)
                 }
             })

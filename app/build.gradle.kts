@@ -38,9 +38,10 @@ android {
 }
 
 dependencies {
-
+    implementation("io.ktor:ktor-client-core:2.3.10")
+    implementation("io.ktor:ktor-client-cio:2.3.10")
     implementation("androidx.core:core-ktx:1.16.0")
-
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.media3:media3-exoplayer:1.9.3")
     implementation("androidx.media3:media3-common:1.9.3")
     implementation("androidx.media3:media3-ui:1.9.3")
@@ -66,6 +67,4 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling:1.10.5")
     implementation("org.apache.commons:commons-compress:1.26.1")
-    implementation("org.tukaani:xz:1.9")
-    implementation("com.github.junrar:junrar:7.5.5")
 }
