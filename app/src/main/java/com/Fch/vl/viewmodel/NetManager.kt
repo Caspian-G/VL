@@ -34,4 +34,12 @@ class NetManager {
             }
         }
     }
+
+    suspend fun getHTTPCurPath(ipPort: String): String {
+        val client = HttpClient()
+        val response: HttpResponse = client.get("http://" + ipPort + "/VL/Func/Path")
+        return response.bodyAsText()
+        client.close()
+    }
+
 }

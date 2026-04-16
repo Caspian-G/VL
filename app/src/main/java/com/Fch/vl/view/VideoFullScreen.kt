@@ -14,6 +14,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -67,6 +69,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Unit, videoPauseButton: Int){
     val view = LocalView.current
+    var videoSize by remember { mutableStateOf(initVideoSize) }
     DisposableEffect(Unit) {
         // 隐藏状态栏和导航栏
         val windowInsetsController = view.windowInsetsController
@@ -84,7 +87,6 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
     }
     var currentPosition by remember { mutableStateOf(0L) }
     var duration by remember { mutableStateOf(0L) }
-    var videoSize by remember { mutableStateOf(initVideoSize) }
     var surfaceBoxWidth by remember { mutableStateOf(0) }
     var surfaceBoxHeight by remember { mutableStateOf(0) }
     var isSeeking by remember { mutableStateOf(false) }
@@ -106,6 +108,7 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
     var activity = LocalContext.current as? Activity
 
     var dropDownMenuIsExpanded by remember { mutableStateOf(false) }
+    var surfaceHolder by remember { mutableStateOf<SurfaceHolder?>(null) }
     LaunchedEffect(isShowingFullScreenVideo) {
         if (isShowingFullScreenVideo) {
             while (true) {
@@ -151,12 +154,16 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
         onClose()
     }
     DisposableEffect(Unit) {
+        val originalCallback = vlPlayer.onVideoSizeChanged
         vlPlayer.onVideoSizeChanged = { size ->
             videoSize = size
+            originalCallback?.invoke(size)
         }
-        onDispose { vlPlayer.onVideoSizeChanged = null; }
+        onDispose {
+            vlPlayer.onVideoSizeChanged = originalCallback
+        }
     }
-    Box(
+    BoxWithConstraints(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(
@@ -212,51 +219,40 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                     )
                 }
             }
+
+            // 新增：解析视频比例
+            val videoAspectRatio = remember(videoSize) {
+                val size = videoSize.split("x")
+                if (size.size == 2) {
+                    val w = size[0].toFloatOrNull() ?: 1f
+                    val h = size[1].toFloatOrNull() ?: 1f
+                    if (h != 0f) w / h else 1f
+                } else 1f
+            }
+
             AndroidView(
                 factory = { context ->
                     SurfaceView(context).apply {
                         holder.addCallback(object : SurfaceHolder.Callback {
                             override fun surfaceCreated(holder: SurfaceHolder) {
+                                surfaceHolder = holder
                                 vlPlayer.setSurface(holder.surface)
                             }
-
-                            override fun surfaceChanged(
-                                holder: SurfaceHolder,
-                                format: Int,
-                                width: Int,
-                                height: Int
-                            ) {
-                            }
-
+                            override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
                             override fun surfaceDestroyed(holder: SurfaceHolder) {
+                                surfaceHolder = null
                                 vlPlayer.setSurface(null)
                             }
                         })
                     }
                 },
                 modifier = Modifier
+                    .aspectRatio(videoAspectRatio)
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
-                        // 关键：设置缩放中心点为点击的位置
-                        // 我们需要将像素坐标转换为比例 (0f ~ 1f)
                         transformOrigin = lastSettledOrigin
-                    },
-                update = { view ->
-                    if (videoSize != "0x0") {
-                        val size = videoSize.split("x")
-                        val vWidth = size[0].toInt()
-                        val vHeight = size[1].toInt()
-                        val (targetWidth, targetHeight) = if (vHeight > vWidth) {
-                            // 竖屏：高度固定，宽度按比例（宽度可能小于父容器宽度）
-                            (vWidth * surfaceBoxHeight / vHeight) to surfaceBoxHeight
-                        } else {
-                            // 横屏：宽度固定，高度按比例（高度可能小于父容器高度）
-                            surfaceBoxWidth to (vHeight * surfaceBoxWidth / vWidth)
-                        }
-                        view.holder.setFixedSize(targetWidth, targetHeight)
                     }
-                }
             )
         }
         if (isShowingFullScreenVideoButton) {

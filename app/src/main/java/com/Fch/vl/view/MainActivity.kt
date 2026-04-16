@@ -58,6 +58,7 @@ import android.provider.Settings
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -82,7 +83,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             ActivityMain()
         }
-        // 检查并请求 Android 11+ 的所有文件访问权限
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
@@ -90,7 +90,6 @@ class MainActivity : ComponentActivity() {
                 startActivity(intent)
             }
         } else {
-            // Android 10 以下请求普通权限
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
@@ -404,10 +403,8 @@ fun ActivityMain() {
                                     val vWidth = size[0].toInt()
                                     val vHeight = size[1].toInt()
                                     val (targetWidth, targetHeight) = if (vHeight > vWidth) {
-                                        // 竖屏：高度固定，宽度按比例（宽度可能小于父容器宽度）
                                         (vWidth * surfaceBoxHeight / vHeight) to surfaceBoxHeight
                                     } else {
-                                        // 横屏：宽度固定，高度按比例（高度可能小于父容器高度）
                                         surfaceBoxWidth to (vHeight * surfaceBoxWidth / vWidth)
                                     }
                                     view.holder.setFixedSize(targetWidth, targetHeight)
@@ -489,7 +486,7 @@ fun ActivityMain() {
                                     .align(Alignment.BottomEnd)
                                     .offset(y = -25.dp),
                                 onClick = {
-                                    if(isNotFullScreenVideoLocked){
+                                    if(!isNotFullScreenVideoLocked){
                                         if(isVideoExpanded){
                                             realSurfaceBoxHeight = 200.dp
                                             isVideoExpanded = false
@@ -530,25 +527,24 @@ fun ActivityMain() {
                                 )
                             }
                             if(!isNotFullScreenVideoLocked){
-                                Box(modifier = Modifier.width(70.dp).height(20.dp).align(Alignment.BottomStart).offset(x = 8.dp, y = -30.dp)) {
-                                    Text(
-                                        modifier = Modifier.align(Alignment.BottomStart),
-                                        color = Grey,
-                                        text = formatTime(currentPosition),
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        modifier = Modifier.align(Alignment.BottomCenter),
-                                        color = Grey,
-                                        text = ":",
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        modifier = Modifier.align(Alignment.BottomEnd),
-                                        color = Grey,
-                                        text = formatTime(duration),
-                                        fontSize = 12.sp
-                                    )
+                                Box(modifier = Modifier.width(100.dp).height(20.dp).align(Alignment.BottomStart).offset(x = 8.dp, y = -30.dp)) {
+                                    Row {
+                                        Text(
+                                            color = Grey,
+                                            text = formatTime(currentPosition),
+                                            fontSize = 12.sp
+                                        )
+                                        Text(
+                                            color = Grey,
+                                            text = " : ",
+                                            fontSize = 12.sp
+                                        )
+                                        Text(
+                                            color = Grey,
+                                            text = formatTime(duration),
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
                                 Slider(
                                     value = if (duration > 0) currentPosition.toFloat() / duration.toFloat() else 0f,
@@ -639,6 +635,7 @@ fun ActivityMain() {
                                             val fileExtension = file.extension
                                             if (fileExtension in videoExtensions) {
                                                 isShowingSurface = true
+                                                videoSize = "0x0"
                                                 vlPlayer.playingVideo(file.absolutePath)
                                             }else if(fileExtension in photoExtensions){
                                                 val folder = File(currentLocalPath)
@@ -770,8 +767,11 @@ fun ActivityMain() {
                                         } else {
                                             //文件处理逻辑
                                             if (file.endsWith(".video")) {
-//                                                isShowingSurface = true
-//                                                vlPlayer.playingVideo(file.absolutePath)
+                                                scope.launch {
+                                                    isShowingSurface = true
+                                                    videoSize = "0x0"
+                                                    vlPlayer.playingVideo(netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
+                                                }
                                             }else if(file.endsWith(".photo")){
 //                                                val folder = File(currentLocalPath)
 //                                                val imageFiles = folder.listFiles()?.filter {
@@ -901,7 +901,7 @@ fun ActivityMain() {
             ImageViewer(currentLocalImageList, currentLocalImageIndex, onClose = {isShowingImage = false})
         }
         if(isShowingFullScreenVideo){
-            videoFullScreen(vlPlayer, videoSize, onClose = { isShowingFullScreenVideo = false; shouldRebindSurface = true; videoPauseButtonResource = vlPlayer.playingButtonState;}, videoPauseButtonResource)
+            videoFullScreen(vlPlayer, videoSize, onClose = { isShowingFullScreenVideo = false; shouldRebindSurface = true; videoPauseButtonResource = vlPlayer.playingButtonState; videoSize = "0x0";}, videoPauseButtonResource)
         }
     }
 }

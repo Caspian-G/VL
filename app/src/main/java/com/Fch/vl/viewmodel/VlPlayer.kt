@@ -60,8 +60,6 @@ class VlPlayer(application: Application) : AndroidViewModel(application) {
             if (currentSurface != surface) {
                 currentSurface = surface
                 currentPlayer?.setVideoSurface(surface)
-                // 关键：ExoPlayer 切换 Surface 后有时需要触发一次 seek 或 play
-                // 强制渲染器刷新 Buffer
                 if (currentPlayer?.playbackState == Player.STATE_READY) {
                     // 轻轻挪动 1ms 往往能强迫画面刷新
                     // currentPlayer?.seekTo(currentPlayer!!.currentPosition)
@@ -75,8 +73,6 @@ class VlPlayer(application: Application) : AndroidViewModel(application) {
     fun releaseVideo() {
         currentPlayer?.release()
         currentPlayer = null
-        // 不清空 currentSurface，因为 Surface 可能还会被后续播放器使用
-        // 但外部会在 surfaceDestroyed 时调用 setSurface(null)
     }
 
     fun getDuration(): Long = currentPlayer?.duration?.takeIf { it > 0 } ?: 0L
