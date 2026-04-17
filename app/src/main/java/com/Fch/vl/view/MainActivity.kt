@@ -1,6 +1,7 @@
 package com.Fch.vl.view
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -72,9 +73,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlin.io.extension
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.collectAsState
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.Fch.vl.viewmodel.NetManager
 import com.Fch.vl.viewmodel.VlPlayer
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
+//数据持久化
+val Context.ipPortDataStore by preferencesDataStore(name = "IpPort")
+object Keys {  //简化存取代码
+    val ipPort = stringPreferencesKey("IpPort")  //定义钥匙
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,7 +158,8 @@ fun ActivityMain() {
     //当前网络文件夹的路径
     var currentNetPath by remember { mutableStateOf("") }
     var isShowingDialog by remember { mutableStateOf(false) }
-    var textFieldValue by remember { mutableStateOf("") }
+    val lastIpPort by context.ipPortDataStore.data.map { it[Keys.ipPort] ?: "" }.collectAsState(initial = "")
+    var textFieldValue by remember(key1 = lastIpPort) { mutableStateOf(lastIpPort) }
     var netFileList by remember { mutableStateOf(emptyList<String>()) }
     val netManager = remember { NetManager() }
     LaunchedEffect(currentNetPath) {
@@ -555,7 +571,6 @@ fun ActivityMain() {
                                     onValueChangeFinished = {
                                         scope.launch {
                                             vlPlayer.setPosition(currentPosition)
-                                            // 移除不必要的重建逻辑
                                             isSeeking = false
                                         }
                                     },
@@ -649,7 +664,6 @@ fun ActivityMain() {
                                                 isShowingZipViewer = true
                                                 currentLocalZipPath = file.absolutePath
                                             }
-
                                         }
                                     }
                                 ) {
@@ -876,8 +890,19 @@ fun ActivityMain() {
                                                 textFieldValue
                                             )
                                         ) {
-                                            netFileList = netManager.getHTTPFileList(textFieldValue, currentNetPath)
-                                            isShowingDialog = false
+                                            try{
+                                                //强制IO线程执行
+                                                netFileList = withContext(Dispatchers.IO) {
+                                                    netManager.getHTTPFileList(textFieldValue, currentNetPath)
+                                                }
+                                                isShowingDialog = false
+                                                context.ipPortDataStore.edit { preferences ->
+                                                    preferences[Keys.ipPort] = textFieldValue
+                                                }
+                                            }catch (e: Exception){
+                                                //http访问失败
+                                                Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show()
+                                            }
                                         } else Toast.makeText(context, "Illegal", Toast.LENGTH_SHORT).show()
                                     }
                                 }

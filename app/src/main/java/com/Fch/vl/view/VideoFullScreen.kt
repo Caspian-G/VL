@@ -1,5 +1,6 @@
 package com.Fch.vl.view
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.view.SurfaceHolder
@@ -65,6 +66,7 @@ import com.Fch.vl.viewmodel.VlPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedBoxWithConstraintsScope")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Unit, videoPauseButton: Int){
@@ -378,7 +380,7 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                     .width(30.dp)
                     .align(Alignment.CenterEnd),
                 onClick = {
-                    if(!isFullScreenVideoLocked) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+                    if(!isFullScreenVideoLocked) activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 }
             ){
                 Icon(
