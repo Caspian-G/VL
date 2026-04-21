@@ -163,7 +163,7 @@ fun ActivityMain() {
     var netFileList by remember { mutableStateOf(emptyList<String>()) }
     val netManager = remember { NetManager() }
     LaunchedEffect(currentNetPath) {
-        if(!textFieldValue.isEmpty()) netFileList = netManager.getHTTPFileList(textFieldValue, currentNetPath)
+        if(!textFieldValue.isEmpty()) netFileList = netManager.getHTTPFileList(textFieldValue, currentNetPath).sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
     }
     //视频扩展名
     val videoExtensions = listOf("mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp")
@@ -243,7 +243,7 @@ fun ActivityMain() {
     var shouldRebindSurface by remember { mutableStateOf(false) }
     LaunchedEffect(shouldRebindSurface) {
         if (shouldRebindSurface) {
-            // 等待一帧，确保视图已更新
+            //等待一帧 确保视图已更新
             delay(50)
             mainSurfaceHolder?.surface?.let { surface ->
                 if (surface.isValid) {
@@ -269,8 +269,11 @@ fun ActivityMain() {
         }else if(isLocalFolderVisible){
             if (!currentLocalPath.equals("/storage/emulated/0")) currentLocalPath =
                 currentLocalPath.take(currentLocalPath.lastIndexOf("/"))
-            else Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show()
-        } //else if(){}
+        }else if(isNetFolderVisible){
+            scope.launch {
+                netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory").sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
+            }
+        }
     }
 
     //zippreview
@@ -322,7 +325,7 @@ fun ActivityMain() {
                         onClick = {
 
                         }
-                    ){
+                    ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_search),
                             tint = White,
@@ -623,7 +626,6 @@ fun ActivityMain() {
                                 onClick = {
                                     if (!currentLocalPath.equals("/storage/emulated/0")) currentLocalPath =
                                         currentLocalPath.take(currentLocalPath.lastIndexOf("/"))
-                                    else Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show()
                                 }
                             ) {
                                 Text(
@@ -638,7 +640,7 @@ fun ActivityMain() {
                             modifier = Modifier
                                 .fillMaxWidth()
                         ) {
-                            items(fileList) { file ->
+                            items(fileList, key = {it}) { file ->
                                 TextButton(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(5.dp),
@@ -756,7 +758,7 @@ fun ActivityMain() {
                                 contentPadding = PaddingValues(5.dp),
                                 onClick = {
                                     scope.launch {
-                                        netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory")
+                                        netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory").sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
                                     }
                                 }
                             ) {
@@ -768,25 +770,26 @@ fun ActivityMain() {
                                 )
                             }
                         }
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            items(items = netFileList) { file ->
-                                TextButton(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(5.dp),
-                                    onClick = {
-                                        if (file.endsWith(".directory")) {
-                                            currentNetPath = file.substringBeforeLast(".")
-                                        } else {
-                                            //文件处理逻辑
-                                            if (file.endsWith(".video")) {
-                                                scope.launch {
-                                                    isShowingSurface = true
-                                                    videoSize = "0x0"
-                                                    vlPlayer.playingVideo(netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
-                                                }
-                                            }else if(file.endsWith(".photo")){
+                        if(netFileList.isNotEmpty() && netFileList != listOf("")){
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(items = netFileList, key = {it}) { file ->
+                                    TextButton(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(5.dp),
+                                        onClick = {
+                                            if (file.endsWith(".directory")) {
+                                                currentNetPath = file.substringBeforeLast(".")
+                                            } else {
+                                                //文件处理逻辑
+                                                if (file.endsWith(".video")) {
+                                                    scope.launch {
+                                                        isShowingSurface = true
+                                                        videoSize = "0x0"
+                                                        vlPlayer.playingVideo(netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
+                                                    }
+                                                }else if(file.endsWith(".photo")){
 //                                                val folder = File(currentLocalPath)
 //                                                val imageFiles = folder.listFiles()?.filter {
 //                                                    !it.isDirectory && it.extension.lowercase() in photoExtensions
@@ -794,76 +797,77 @@ fun ActivityMain() {
 //                                                currentLocalImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
 //                                                currentLocalImageIndex = imageFiles?.indexOf(file) ?: 0
 //                                                isShowingImage = true
-                                            }else if(file.endsWith(".audio")){
-                                                //
-                                            }else if(file.endsWith(".rar")){
+                                                }else if(file.endsWith(".audio")){
+                                                    //
+                                                }else if(file.endsWith(".rar")){
 //                                                isShowingZipViewer = true
 //                                                currentLocalZipPath = file.absolutePath
+                                                }
                                             }
                                         }
+                                    ) {
+                                        if (file.endsWith(".directory")) {
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_folder),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }else if(file.endsWith(".video")){
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_video_file),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }else if(file.endsWith(".audio")){
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_audio_file),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }else if(file.endsWith(".photo")){
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_photo_file),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }else if(file.endsWith(".rar")){
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_rar_file),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }else{
+                                            Icon(
+                                                modifier = Modifier
+                                                    .fillMaxHeight()
+                                                    .offset(x = 1.dp),
+                                                painter = painterResource(R.drawable.ic_normal_file),
+                                                tint = Grey,
+                                                contentDescription = null
+                                            )
+                                        }
+                                        Text(
+                                            text = file.substringBeforeLast("."),
+                                            color = Grey,
+                                            fontSize = 15.sp,
+                                            modifier = Modifier.fillMaxSize().offset(x = 20.dp)
+                                        )
                                     }
-                                ) {
-                                    if (file.endsWith(".directory")) {
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_folder),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }else if(file.endsWith(".video")){
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_video_file),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }else if(file.endsWith(".audio")){
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_audio_file),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }else if(file.endsWith(".photo")){
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_photo_file),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }else if(file.endsWith(".rar")){
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_rar_file),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }else{
-                                        Icon(
-                                            modifier = Modifier
-                                                .fillMaxHeight()
-                                                .offset(x = 1.dp),
-                                            painter = painterResource(R.drawable.ic_normal_file),
-                                            tint = Grey,
-                                            contentDescription = null
-                                        )
-                                    }
-                                    Text(
-                                        text = "${file.substring(0, file.lastIndexOf("."))}",
-                                        color = Grey,
-                                        fontSize = 15.sp,
-                                        modifier = Modifier.fillMaxSize().offset(x = 20.dp)
-                                    )
                                 }
                             }
                         }
@@ -893,7 +897,7 @@ fun ActivityMain() {
                                             try{
                                                 //强制IO线程执行
                                                 netFileList = withContext(Dispatchers.IO) {
-                                                    netManager.getHTTPFileList(textFieldValue, currentNetPath)
+                                                    netManager.getHTTPFileList(textFieldValue, currentNetPath).sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
                                                 }
                                                 isShowingDialog = false
                                                 context.ipPortDataStore.edit { preferences ->
@@ -903,7 +907,7 @@ fun ActivityMain() {
                                                 //http访问失败
                                                 Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show()
                                             }
-                                        } else Toast.makeText(context, "Illegal", Toast.LENGTH_SHORT).show()
+                                        } else Toast.makeText(context, "Null", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             ) {

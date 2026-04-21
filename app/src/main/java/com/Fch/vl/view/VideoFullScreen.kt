@@ -153,6 +153,7 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
         vlPlayer.setSurface(null)
         isShowingFullScreenVideo = false
         vlPlayer.setSpeed(1.0f)
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         onClose()
     }
     DisposableEffect(Unit) {
@@ -266,6 +267,7 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                     vlPlayer.setSurface(null)
                     isShowingFullScreenVideo = false
                     vlPlayer.setSpeed(1.0f)
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                     onClose()
                 }
             ) {
