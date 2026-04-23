@@ -787,7 +787,7 @@ fun ActivityMain() {
                                                     scope.launch {
                                                         isShowingSurface = true
                                                         videoSize = "0x0"
-                                                        vlPlayer.playingVideo(netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
+                                                        vlPlayer.playingVideo("http://" + textFieldValue + netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
                                                     }
                                                 }else if(file.endsWith(".photo")){
 //                                                val folder = File(currentLocalPath)
