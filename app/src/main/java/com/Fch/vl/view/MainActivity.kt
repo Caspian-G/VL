@@ -168,7 +168,7 @@ fun ActivityMain() {
     //视频扩展名
     val videoExtensions = listOf("mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp")
     val audioExtensions = listOf("mp3", "wav", "flac", "aac", "ogg")
-    val photoExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp")
+    val imageExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp")
     val rarExtensions = listOf("zip", "7z", "rar")
     //包裹surface的box的width
     var surfaceBoxWidth by remember { mutableStateOf(0) }
@@ -259,8 +259,9 @@ fun ActivityMain() {
 
     //图片处理
     var isShowingImage by remember { mutableStateOf(false) }
-    var currentLocalImageIndex: Int by  remember { mutableStateOf(0) }
-    var currentLocalImageList by remember { mutableStateOf(emptyList<String>()) }
+    var currentImageIndex: Int by  remember { mutableStateOf(0) }
+    var currentImageList by remember { mutableStateOf(emptyList<String>()) }
+    var shouldLocalImageShow by remember { mutableStateOf(true) }
 
     BackHandler {
         if(isLocalFolderVisible && isVideoExpanded){
@@ -615,7 +616,8 @@ fun ActivityMain() {
                             Icon(
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .fillMaxHeight(),
+                                    .fillMaxHeight()
+                                    .offset(x=5.dp),
                                 painter = painterResource(R.drawable.ic_backspace),
                                 tint = Grey,
                                 contentDescription = null
@@ -648,19 +650,18 @@ fun ActivityMain() {
                                         if (file.isDirectory) {
                                             currentLocalPath = file.absolutePath
                                         } else {
-                                            //文件处理逻辑
                                             val fileExtension = file.extension
                                             if (fileExtension in videoExtensions) {
                                                 isShowingSurface = true
                                                 videoSize = "0x0"
                                                 vlPlayer.playingVideo(file.absolutePath)
-                                            }else if(fileExtension in photoExtensions){
+                                            }else if(fileExtension in imageExtensions){
                                                 val folder = File(currentLocalPath)
                                                 val imageFiles = folder.listFiles()?.filter {
-                                                    !it.isDirectory && it.extension.lowercase() in photoExtensions
+                                                    !it.isDirectory && it.extension.lowercase() in imageExtensions
                                                 } ?.sortedBy { it.name } //按名称排序
-                                                currentLocalImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
-                                                currentLocalImageIndex = imageFiles?.indexOf(file) ?: 0
+                                                currentImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
+                                                currentImageIndex = imageFiles?.indexOf(file) ?: 0
                                                 isShowingImage = true
                                             }else if(fileExtension in rarExtensions){
                                                 isShowingZipViewer = true
@@ -673,7 +674,7 @@ fun ActivityMain() {
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_folder),
                                             tint = Grey,
                                             contentDescription = null
@@ -682,7 +683,7 @@ fun ActivityMain() {
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_video_file),
                                             tint = Grey,
                                             contentDescription = null
@@ -691,16 +692,16 @@ fun ActivityMain() {
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_audio_file),
                                             tint = Grey,
                                             contentDescription = null
                                         )
-                                    }else if(file.extension in photoExtensions){
+                                    }else if(file.extension in imageExtensions){
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_photo_file),
                                             tint = Grey,
                                             contentDescription = null
@@ -709,7 +710,7 @@ fun ActivityMain() {
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_rar_file),
                                             tint = Grey,
                                             contentDescription = null
@@ -718,7 +719,7 @@ fun ActivityMain() {
                                         Icon(
                                             modifier = Modifier
                                                 .fillMaxHeight()
-                                                .offset(x = 1.dp),
+                                                .offset(x = 5.dp),
                                             painter = painterResource(R.drawable.ic_normal_file),
                                             tint = Grey,
                                             contentDescription = null
@@ -748,7 +749,8 @@ fun ActivityMain() {
                             Icon(
                                 modifier = Modifier
                                     .align(Alignment.TopStart)
-                                    .fillMaxHeight(),
+                                    .fillMaxHeight()
+                                    .offset(x=5.dp),
                                 painter = painterResource(R.drawable.ic_backspace),
                                 tint = Grey,
                                 contentDescription = null
@@ -782,21 +784,29 @@ fun ActivityMain() {
                                             if (file.endsWith(".directory")) {
                                                 currentNetPath = file.substringBeforeLast(".")
                                             } else {
-                                                //文件处理逻辑
                                                 if (file.endsWith(".video")) {
                                                     scope.launch {
                                                         isShowingSurface = true
                                                         videoSize = "0x0"
+                                                         println(textFieldValue)
                                                         vlPlayer.playingVideo("http://" + textFieldValue + netManager.getHTTPCurPath(textFieldValue) + file.substringBeforeLast(".") )
                                                     }
-                                                }else if(file.endsWith(".photo")){
-//                                                val folder = File(currentLocalPath)
-//                                                val imageFiles = folder.listFiles()?.filter {
-//                                                    !it.isDirectory && it.extension.lowercase() in photoExtensions
-//                                                } ?.sortedBy { it.name } //按名称排序
-//                                                currentLocalImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
-//                                                currentLocalImageIndex = imageFiles?.indexOf(file) ?: 0
-//                                                isShowingImage = true
+                                                }else if (file.endsWith(".image")) {
+                                                    shouldLocalImageShow = false
+                                                    scope.launch {
+                                                        val imageFiles = netManager.getHTTPFileList(textFieldValue, "current_list").sorted().filter { it.endsWith(".image") }
+                                                        val baseUrl = "http://" + textFieldValue + netManager.getHTTPCurPath(textFieldValue)
+                                                        val finalBaseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+                                                        val processedUrls = imageFiles.map { fileName ->
+                                                            val realFileName = fileName.removeSuffix(".image")
+                                                            finalBaseUrl + realFileName
+                                                        }
+                                                        val currentName = file.removeSuffix(".image")
+                                                        val index = imageFiles.indexOfFirst { it.removeSuffix(".image") == currentName }
+                                                        currentImageList = processedUrls
+                                                        currentImageIndex = if (index != -1) index else 0
+                                                        isShowingImage = true
+                                                    }
                                                 }else if(file.endsWith(".audio")){
                                                     //
                                                 }else if(file.endsWith(".rar")){
@@ -810,7 +820,7 @@ fun ActivityMain() {
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_folder),
                                                 tint = Grey,
                                                 contentDescription = null
@@ -819,7 +829,7 @@ fun ActivityMain() {
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_video_file),
                                                 tint = Grey,
                                                 contentDescription = null
@@ -828,16 +838,16 @@ fun ActivityMain() {
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_audio_file),
                                                 tint = Grey,
                                                 contentDescription = null
                                             )
-                                        }else if(file.endsWith(".photo")){
+                                        }else if(file.endsWith(".image")){
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_photo_file),
                                                 tint = Grey,
                                                 contentDescription = null
@@ -846,7 +856,7 @@ fun ActivityMain() {
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_rar_file),
                                                 tint = Grey,
                                                 contentDescription = null
@@ -855,7 +865,7 @@ fun ActivityMain() {
                                             Icon(
                                                 modifier = Modifier
                                                     .fillMaxHeight()
-                                                    .offset(x = 1.dp),
+                                                    .offset(x = 5.dp),
                                                 painter = painterResource(R.drawable.ic_normal_file),
                                                 tint = Grey,
                                                 contentDescription = null
@@ -927,7 +937,7 @@ fun ActivityMain() {
             }
         }
         if(isShowingImage){
-            ImageViewer(currentLocalImageList, currentLocalImageIndex, onClose = {isShowingImage = false})
+            ImageViewer(shouldLocalImageShow, currentImageList, currentImageIndex, onClose = {isShowingImage = false; shouldLocalImageShow = true;})
         }
         if(isShowingFullScreenVideo){
             videoFullScreen(vlPlayer, videoSize, onClose = { isShowingFullScreenVideo = false; shouldRebindSurface = true; videoPauseButtonResource = vlPlayer.playingButtonState; videoSize = "0x0";}, videoPauseButtonResource)

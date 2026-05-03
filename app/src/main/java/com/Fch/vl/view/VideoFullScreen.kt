@@ -222,8 +222,6 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                     )
                 }
             }
-
-            // 新增：解析视频比例
             val videoAspectRatio = remember(videoSize) {
                 val size = videoSize.split("x")
                 if (size.size == 2) {
@@ -232,7 +230,6 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                     if (h != 0f) w / h else 1f
                 } else 1f
             }
-
             AndroidView(
                 factory = { context ->
                     SurfaceView(context).apply {
