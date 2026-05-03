@@ -74,9 +74,7 @@ import kotlin.io.extension
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.collectAsState
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.Fch.vl.viewmodel.NetManager
 import com.Fch.vl.viewmodel.VlPlayer
@@ -87,8 +85,8 @@ import kotlinx.coroutines.withContext
 
 //数据持久化
 val Context.ipPortDataStore by preferencesDataStore(name = "IpPort")
-object Keys {  //简化存取代码
-    val ipPort = stringPreferencesKey("IpPort")  //定义钥匙
+object Keys {
+    val ipPort = stringPreferencesKey("IpPort")
 }
 
 class MainActivity : ComponentActivity() {
@@ -144,11 +142,10 @@ fun ActivityMain() {
     LaunchedEffect(currentLocalPath) {
         val folder = File(currentLocalPath)
         if (folder.exists() && folder.isDirectory) {
-            // 获取文件夹里所有内容 文件夹排在前面 并按名称排序
             fileList = folder.listFiles()?.sortedWith(
                 compareBy(
-                    { !it.isDirectory },  // 文件夹在前
-                    { it.name }  // 按名称
+                    { !it.isDirectory },
+                    { it.name }
                 )
             )?.toList() ?: emptyList()
         } else {
@@ -210,16 +207,15 @@ fun ActivityMain() {
             while (true) {
                 if (!isSeeking) {
                     val pos = vlPlayer.getCurrentPosition()
-                    // 只有位置发生变化才更新 Compose 状态 减少重绘
                     if (pos >= 0 && pos != currentPosition) {
                         currentPosition = pos
                     }
                     val d = vlPlayer.getDuration()
-                    if (d > 0 && d != duration) {   // 只要新值有效且不同就更新
+                    if (d > 0 && d != duration) {
                         duration = d
                     }
                 }
-                delay(if (isPlaying) 500 else 2000) // 暂停时每2秒才扫一次 几乎不占资源
+                delay(if (isPlaying) 500 else 2000)
             }
         }
     }
@@ -253,16 +249,13 @@ fun ActivityMain() {
             shouldRebindSurface = false
         }
     }
-
     //协程异步等待使用
     val scope = rememberCoroutineScope()
-
     //图片处理
     var isShowingImage by remember { mutableStateOf(false) }
     var currentImageIndex: Int by  remember { mutableStateOf(0) }
     var currentImageList by remember { mutableStateOf(emptyList<String>()) }
     var shouldLocalImageShow by remember { mutableStateOf(true) }
-
     BackHandler {
         if(isLocalFolderVisible && isVideoExpanded){
             realSurfaceBoxHeight = 200.dp
@@ -276,13 +269,11 @@ fun ActivityMain() {
             }
         }
     }
-
     //zippreview
     var isShowingZipViewer by remember { mutableStateOf(false) }
     var currentLocalZipPath by remember { mutableStateOf("") }
     Box(modifier = Modifier.fillMaxSize().systemBarsPadding()){
         Column{
-            //标题栏
             Box(
                 modifier = Modifier
                     .systemBarsPadding()
@@ -309,7 +300,6 @@ fun ActivityMain() {
                     )
                 }
             }
-            //搜索栏
             Box(
                 modifier = Modifier
                     .systemBarsPadding()
@@ -384,7 +374,7 @@ fun ActivityMain() {
                             .height(realSurfaceBoxHeight)
                             .background(Black)
                             .onGloballyPositioned { coordinates ->
-                                surfaceBoxWidth = coordinates.size.width  //获取Box宽度
+                                surfaceBoxWidth = coordinates.size.width
                                 surfaceBoxHeight = coordinates.size.height
                             },
                         contentAlignment = Alignment.Center
@@ -395,7 +385,6 @@ fun ActivityMain() {
                                     holder.addCallback(object : SurfaceHolder.Callback {
                                         override fun surfaceCreated(holder: SurfaceHolder) {
                                             mainSurfaceHolder = holder
-                                            //仅set一次 绑定surface和cpp中window
                                             if (!isShowingFullScreenVideo) {
                                                 vlPlayer.setSurface(holder.surface)
                                             }
@@ -659,7 +648,7 @@ fun ActivityMain() {
                                                 val folder = File(currentLocalPath)
                                                 val imageFiles = folder.listFiles()?.filter {
                                                     !it.isDirectory && it.extension.lowercase() in imageExtensions
-                                                } ?.sortedBy { it.name } //按名称排序
+                                                } ?.sortedBy { it.name }
                                                 currentImageList = imageFiles?.map { it.absolutePath } ?:emptyList()
                                                 currentImageIndex = imageFiles?.indexOf(file) ?: 0
                                                 isShowingImage = true
@@ -760,7 +749,9 @@ fun ActivityMain() {
                                 contentPadding = PaddingValues(5.dp),
                                 onClick = {
                                     scope.launch {
-                                        netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory").sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
+                                        try{
+                                            netFileList = netManager.getHTTPFileList(textFieldValue, "esc_this_directory").sortedWith(compareBy({!it.endsWith(".directory")}, {it.lowercase()}))
+                                        } catch (e: Exception) { }
                                     }
                                 }
                             ) {

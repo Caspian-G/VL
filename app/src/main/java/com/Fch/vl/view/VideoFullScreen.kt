@@ -97,7 +97,7 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
     val scope = rememberCoroutineScope()
     var isShowingFullScreenVideoButton by remember { mutableStateOf(true) }
     var videoPauseButtonResource by remember { mutableStateOf(videoPauseButton) }
-    var zoomRatio by remember { mutableStateOf(2.5f) }
+    val zoomRatio by remember { mutableStateOf(2.5f) }
     var isOnDoubleTap by remember { mutableStateOf(false) }
     //记录双击的位置
     var tapOffset by remember { mutableStateOf(Offset.Zero) }
@@ -116,16 +116,15 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
             while (true) {
                 if (!isSeeking) {
                     val pos = vlPlayer.getCurrentPosition()
-                    // 只有位置发生变化才更新 Compose 状态 减少重绘
                     if (pos >= 0 && pos != currentPosition) {
                         currentPosition = pos
                     }
                     val d = vlPlayer.getDuration()
-                    if (d > 0 && d != duration) {   // 只要新值有效且不同就更新
+                    if (d > 0 && d != duration) {
                         duration = d
                     }
                 }
-                delay(if (isPlaying) 500 else 2000) // 暂停时每2秒才扫一次 几乎不占资源
+                delay(if (isPlaying) 500 else 2000)
             }
         }
     }
@@ -197,11 +196,13 @@ fun videoFullScreen(vlPlayer: VlPlayer, initVideoSize: String, onClose: () -> Un
                                 dragEvent = withTimeout(viewConfiguration.longPressTimeoutMillis) {
                                     waitForUpOrCancellation()
                                 }
-                            } catch (e: PointerEventTimeoutCancellationException) {  //捕获长按
+                            } catch (e: PointerEventTimeoutCancellationException) {
+                                //长按捕获
                                 vlPlayer.setSpeed(speedRatio)
                                 while (true) {
                                     val event = awaitPointerEvent()
-                                    if (event.changes.any { it.changedToUp() }) {  //长按取消
+                                    if (event.changes.any { it.changedToUp() }) {
+                                        //长按取消
                                         vlPlayer.setSpeed(currentVideoRatio)
                                         break
                                     }
