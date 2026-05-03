@@ -45,7 +45,7 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.9.3")
     implementation("androidx.media3:media3-common:1.9.3")
     implementation("androidx.media3:media3-ui:1.9.3")
-    implementation("io.coil-kt:coil-compose:2.4.0")  //图片加载库
+    implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.compose.foundation:foundation:1.10.5")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
